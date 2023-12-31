@@ -86,11 +86,11 @@ def get_auth_group(request):
 
 
 @api_view(['POST', 'GET'])
-def call_insert_procedure(request):
+def CallStoredProcedure(request):
     conn = DbConnector()
     procedure_name = request.data['procedure_name']
     params = request.data['params']
-    data = Exp.call_insert_procedure(procedure_name, tuple(params), conn)
+    data = Exp.ExecuteProcedure(procedure_name, tuple(params), conn)
     return Response(data)
 
 
