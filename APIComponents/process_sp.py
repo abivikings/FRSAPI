@@ -6,7 +6,7 @@ class ExecuteStoredProcedure:
         cursor = conn.cursor()
         procedure_name = procedure_name
         param_markers = ", ".join(["?" for _ in params])
-        sql_query = f"EXEC {procedure_name} {param_markers}"
+        sql_query = f"CALL {procedure_name} {param_markers}"
         cursor.execute(sql_query, params)
         data = cursor.fetchall()
         json_list = []
