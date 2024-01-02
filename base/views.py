@@ -1,5 +1,7 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User, Group
+from django.db import models
+from django.db.models import Sum, ExpressionWrapper, F, DecimalField
 from django.http import JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from psycopg2._psycopg import IntegrityError
@@ -22,6 +24,31 @@ JWT_authenticator = JWTAuthentication()
 @api_view(['POST'])
 def set_password():
     pass
+
+
+def get_user_role(email):
+    user = User.objects.get(email=email)
+    role = user.groups.values_list('name', flat=True)[0]
+    return role
+
+
+@api_view(['GET'])
+def super_admin_dashboard(request):
+    groups_with_user_counts = list(Group.objects.annotate(user_count=models.Count('user')))
+    filtered_count = Campaign.objects.filter(is_active=True).count()
+    total_target_amount = CampaignDetails.objects.aggregate(total_target=Sum('target_amount'))
+    total_collected_amount = CampaignDetails.objects.aggregate(total_collected=Sum('collected_amount'))
+
+    data = {
+        'super_admin': groups_with_user_counts[2].user_count,
+        'camp_admin': groups_with_user_counts[0].user_count,
+        'donor': groups_with_user_counts[1].user_count,
+        'total_camp': filtered_count,
+        'goal': total_target_amount['total_target'],
+        'raised': total_collected_amount['total_collected'],
+        'remaining': total_target_amount['total_target'] - total_collected_amount['total_collected']
+    }
+    return Response(data)
 
 
 class CampaignViewSet(viewsets.ModelViewSet):
@@ -86,11 +113,11 @@ def get_auth_group(request):
 
 
 @api_view(['POST', 'GET'])
-def CallStoredProcedure(request):
+def call_procedure(request):
     conn = DbConnector()
     procedure_name = request.data['procedure_name']
     params = request.data['params']
-    data = Exp.ExecuteProcedure(procedure_name, tuple(params), conn)
+    data = Exp.call_procedure(procedure_name, tuple(params), conn)
     return Response(data)
 
 

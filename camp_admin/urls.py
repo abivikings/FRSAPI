@@ -6,6 +6,7 @@ from camp_admin.views import *
 
 router = DefaultRouter()
 router.register(r'donor', DonorViewSet)
+router.register(r'camp_admin_dashboard', CampAdminDashboardViewSet)
 
 
 urlpatterns = [

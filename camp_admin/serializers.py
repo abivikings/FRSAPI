@@ -14,3 +14,9 @@ class DonorCardSerializer(serializers.ModelSerializer):
     class Meta:
         model = CardInfo
         fields = '__all__'
+
+
+class CampAdminDashboardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CampaignDetails
+        fields = '__all__'

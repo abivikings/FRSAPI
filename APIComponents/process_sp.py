@@ -1,6 +1,6 @@
 class ExecuteStoredProcedure:
     @classmethod
-    def ExecuteProcedure(cls, procedure_name, params, conn):
+    def call_procedure(cls, procedure_name, params, conn):
         cursor = conn.cursor()
         json_list = []
         procedure_name = procedure_name

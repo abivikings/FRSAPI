@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
-from base.models import Campaign
+from base.models import *
 
 
 class Donor(models.Model):
