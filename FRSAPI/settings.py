@@ -60,7 +60,8 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://donafy.org"
+    "https://donafy.org",
+    "https://www.donafy.org"
 ]
 
 
