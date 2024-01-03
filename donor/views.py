@@ -1,7 +1,12 @@
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from authorizenet import apicontractsv1
-from authorizenet.apicontrollers import createTransactionController
 from rest_framework.response import Response
+from Crypto.Cipher import AES
+from base64 import b64encode, b64decode
+from django.conf import settings
+from hashlib import sha256
+from .models import *
+from APIComponents.PaymentProcess import ProcessPayment as prosPay
 
 
 @api_view(['POST'])
@@ -9,55 +14,58 @@ def Donation(request):
     if request.method == 'POST':
         card_number = request.data['card_number']
         exp_date = request.data['exp_date']
-        api_login_id = '3ZA3Uk2ueQ'
-        transaction_key = '8mbwJ42E6T26N6yc'
-        merchant_auth = apicontractsv1.merchantAuthenticationType()
-        merchant_auth.name = api_login_id
-        merchant_auth.transactionKey = transaction_key
-
-        # Create a credit card object
-        credit_card = apicontractsv1.creditCardType()
-        credit_card.cardNumber = card_number
-        credit_card.expirationDate = exp_date
-
-        # Create a payment object
-        payment = apicontractsv1.paymentType()
-        payment.creditCard = credit_card
-
-        # Create a transaction request
-        transaction_request = apicontractsv1.transactionRequestType()
-        transaction_request.transactionType = "authCaptureTransaction"
-        transaction_request.amount = "400.00"
-        transaction_request.payment = payment
-
-        # Create a create transaction request
-        create_request = apicontractsv1.createTransactionRequest()
-        create_request.merchantAuthentication = merchant_auth
-        create_request.transactionRequest = transaction_request
-
-        # Execute the request
-        controller = createTransactionController(create_request)
-        controller.execute()
-
-        # Get the response
-        response = controller.getresponse()
-
-        # Check the result
-        if response is not None:
-            if response.messages.resultCode == "Ok":
-                print("Transaction ID:", response.transactionResponse.transId)
-                print("Transaction Response Code:", response.transactionResponse.responseCode)
-                print("Message Code:", response.transactionResponse.messages.message[0].code)
-                print("Description:", response.transactionResponse.messages.message[0].description)
-                return Response("Done")
-            else:
-                print("Transaction failed with response code:", response.messages.message[0]['code'])
-                return Response("Failed")
-        else:
-            print("No response received")
+        amount = request.data['amount']
+        prosPay.process_payment(card_number, exp_date, amount)
 
 
+def generate_aes_key(secret_key):
+    # Use hashlib to create a fixed-length key based on the SECRET_KEY
+    hashed_key = sha256(secret_key.encode()).digest()
+    return hashed_key[:16]  # Use the first 16 bytes for a 128-bit AES key
+
+
+def encrypt_data(data, key):
+    cipher = AES.new(key, AES.MODE_EAX)
+    ciphertext, tag = cipher.encrypt_and_digest(data.encode('utf-8'))
+    return b64encode(cipher.nonce + tag + ciphertext).decode('utf-8')
+
+
+def decrypt_data(encrypted_data, key):
+    encrypted_data = b64decode(encrypted_data.encode('utf-8'))
+    nonce = encrypted_data[:16]
+    tag = encrypted_data[16:32]
+    ciphertext = encrypted_data[32:]
+    cipher = AES.new(key, AES.MODE_EAX, nonce)
+    decrypted_data = cipher.decrypt_and_verify(ciphertext, tag)
+    return decrypted_data.decode('utf-8')
+
+
+@api_view(['POST'])
 def SaveCardInfo(request):
+    encryption_key = generate_aes_key(settings.SECRET_KEY)
     if request.method == 'POST':
-        card_number = request.data['card_number']
-        exp_date = request.data['exp_date']
+        donor_id = request.data['donor_id']
+        card_number = encrypt_data(request.data['card_number'], encryption_key)
+        exp_date = encrypt_data(request.data['exp_date'], encryption_key)
+        is_submitted = CardInfo.objects.create(donor_id=donor_id, card_number=card_number, card_exp_date=exp_date)
+        if is_submitted:
+            return Response('Stored')
+        else:
+            return Response('Failed')
+
+
+@api_view(['POST'])
+def DonateByStoredInfo(request):
+    encryption_key = generate_aes_key(settings.SECRET_KEY)
+    if request.method == 'POST':
+        donor_id = request.data['donor_id']
+        amount = request.data['amount']
+        donor_card_info = list(CardInfo.objects.filter(donor_id=donor_id).values())
+        card_number = decrypt_data(donor_card_info[0]['card_number'], encryption_key)
+        exp_date = decrypt_data(donor_card_info[0]['card_exp_date'], encryption_key)
+        result = prosPay.process_payment(card_number, exp_date, amount)
+        if result:
+            return Response(status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+

@@ -17,5 +17,4 @@ urlpatterns = [
     path('login/', login, name='login'),
     path('auth_me/', auth_me, name='auth_me'),
     path('get_auth_group/', get_auth_group, name='get_auth_group'),
-    path('', include('donor.urls'))
 ]

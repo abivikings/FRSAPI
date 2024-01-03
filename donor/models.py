@@ -4,8 +4,8 @@ from base.models import *
 
 
 class Donor(models.Model):
-    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE)
-    added_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    campaign = models.ForeignKey(Campaign, on_delete=models.CASCADE, null=True)
+    added_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     first_name = models.TextField(max_length=50, null=True)
     last_name = models.TextField(max_length=50, null=True)
     email = models.EmailField(max_length=50, null=True)
@@ -13,6 +13,6 @@ class Donor(models.Model):
 
 class CardInfo(models.Model):
     donor = models.ForeignKey(Donor, on_delete=models.CASCADE)
-    card_number = models.TextField(max_length=50, null=True)
-    card_exp_date = models.DateField(max_length=10, null=True)
-    wallet_address = models.TextField(max_length=50, null=True)
+    card_number = models.TextField(max_length=100, null=True)
+    card_exp_date = models.TextField(max_length=100, null=True)
+    wallet_address = models.TextField(max_length=100, null=True)
