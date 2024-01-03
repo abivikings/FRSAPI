@@ -15,7 +15,11 @@ def Donation(request):
         card_number = request.data['card_number']
         exp_date = request.data['exp_date']
         amount = request.data['amount']
-        prosPay.process_payment(card_number, exp_date, amount)
+        result = prosPay.process_payment(card_number, exp_date, amount)
+        if result:
+            return Response(status=status.HTTP_202_ACCEPTED)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
 def generate_aes_key(secret_key):
