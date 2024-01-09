@@ -12,10 +12,11 @@ from APIComponents.PaymentProcess import ProcessPayment as prosPay
 @api_view(['POST'])
 def Donation(request):
     if request.method == 'POST':
+        campaign_id = request.data['campaign_id']
         card_number = request.data['card_number']
         exp_date = request.data['exp_date']
         amount = request.data['amount']
-        result = prosPay.process_payment(card_number, exp_date, amount)
+        result = prosPay.process_payment(campaign_id, card_number, exp_date, amount)
         if result:
             return Response(status=status.HTTP_202_ACCEPTED)
         else:
@@ -62,12 +63,13 @@ def SaveCardInfo(request):
 def DonateByStoredInfo(request):
     encryption_key = generate_aes_key(settings.SECRET_KEY)
     if request.method == 'POST':
+        campaign_id = request.data['campaign_id']
         donor_id = request.data['donor_id']
         amount = request.data['amount']
         donor_card_info = list(CardInfo.objects.filter(donor_id=donor_id).values())
         card_number = decrypt_data(donor_card_info[0]['card_number'], encryption_key)
         exp_date = decrypt_data(donor_card_info[0]['card_exp_date'], encryption_key)
-        result = prosPay.process_payment(card_number, exp_date, amount)
+        result = prosPay.process_payment(campaign_id, card_number, exp_date, amount)
         if result:
             return Response(status=status.HTTP_202_ACCEPTED)
         else:

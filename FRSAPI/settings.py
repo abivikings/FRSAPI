@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'base',
     'corsheaders',
     'rest_framework_simplejwt',
-    'donor'
+    'donor',
+    'camp_admin'
 ]
 
 MIDDLEWARE = [

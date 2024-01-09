@@ -1,11 +1,12 @@
 from authorizenet import apicontractsv1
 from authorizenet.apicontrollers import createTransactionController
 from rest_framework.response import Response
+from camp_admin.models import *
 
 
 class ProcessPayment:
     @classmethod
-    def process_payment(cls, card_number, exp_date, amount):
+    def process_payment(cls, campaign_id, card_number, exp_date, amount):
         api_login_id = '3ZA3Uk2ueQ'
         transaction_key = '8mbwJ42E6T26N6yc'
         merchant_auth = apicontractsv1.merchantAuthenticationType()
@@ -46,6 +47,7 @@ class ProcessPayment:
                 print("Transaction Response Code:", response.transactionResponse.responseCode)
                 print("Message Code:", response.transactionResponse.messages.message[0].code)
                 print("Description:", response.transactionResponse.messages.message[0].description)
+                Donations.objects.create(campaign_id=campaign_id, anonymous_location="New York", amount=amount)
                 return Response("Done")
             else:
                 print("Transaction failed with response code:", response.messages.message[0]['code'])
